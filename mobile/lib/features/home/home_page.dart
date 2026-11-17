@@ -90,6 +90,8 @@ class HomePage extends HookConsumerWidget {
     final filter = useState('All');
     // FORK: the selected Hive Home tab.
     final tab = useState(HiveHomeTab.channels);
+    // FORK: each inventory tab keeps its own Unread toggle.
+    final unreadOnlyTabs = useState(<HiveHomeTab>{});
     final hasUnreadInbox = ref.watch(inboxHasUnreadProvider);
     final inboxLabel = hasUnreadInbox ? 'Activity, unread items' : 'Activity';
     final reselect = useValueNotifier(0);
@@ -325,7 +327,14 @@ class HomePage extends HookConsumerWidget {
     );
     // FORK: one ChannelsPage serves all three Hive tabs, so they share its
     // header; HiveInventoryScope picks what it lists (or Activity).
-    final hiveContent = HiveInventoryScope(tab: tab.value, child: messages);
+    final hiveContent = HiveInventoryScope(
+      tab: tab.value,
+      unreadOnly: unreadOnlyTabs.value.contains(tab.value),
+      onUnreadOnlyChanged: (on) => unreadOnlyTabs.value = on
+          ? {...unreadOnlyTabs.value, tab.value}
+          : ({...unreadOnlyTabs.value}..remove(tab.value)),
+      child: messages,
+    );
     // The tab bar at the bottom left and New at the bottom right, the way iOS
     // 26 apps pair a tab bar with a separate round button. The bar's platter
     // is taller than upstream's 56pt slot: centre the platter on the slot and

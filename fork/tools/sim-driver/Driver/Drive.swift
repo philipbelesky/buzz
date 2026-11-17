@@ -28,8 +28,11 @@ final class Drive: XCTestCase {
         var log: [String] = []
         defer { try? log.joined(separator: "\n").write(to: out.appendingPathComponent("log.txt"), atomically: true, encoding: .utf8) }
 
+        /// Waits up to five seconds for the label, since a tap that follows a
+        /// navigation otherwise races the route transition.
         func element(_ label: String) -> XCUIElement? {
             let byId = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ OR identifier == %@", label, label))
+            _ = byId.firstMatch.waitForExistence(timeout: 5)
             for i in 0 ..< min(byId.count, 20) where byId.element(boundBy: i).isHittable { return byId.element(boundBy: i) }
             return byId.count > 0 ? byId.firstMatch : nil
         }
@@ -46,7 +49,7 @@ final class Drive: XCTestCase {
                 e.tap()
             } else if let text = step["tapText"] as? String {
                 let e = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
-                guard e.exists else { log.append("MISSING \(name)"); continue }
+                guard e.waitForExistence(timeout: 5) else { log.append("MISSING \(name)"); continue }
                 e.tap()
             } else if let point = step["tapAt"] as? [Double], point.count == 2 {
                 app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: point[0], dy: point[1])).tap()

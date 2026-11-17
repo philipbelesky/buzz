@@ -317,6 +317,9 @@ class _SliverChannelsList extends HookConsumerWidget {
         readState.effectiveTimestamp(channelId) != null;
     final unreadChannelIds = highlights.unread.where(seeded).toSet();
     final attentionChannelIds = highlights.attention.where(seeded).toSet();
+    // FORK: Hive's Unread toggle keeps only unread or needs-attention rows.
+    final hiveUnreadOnly = HiveInventoryScope.unreadOnlyOf(context);
+    bool hiveKeeps(Channel c) => !hiveUnreadOnly || unreadChannelIds.contains(c.id) || attentionChannelIds.contains(c.id);
     // Build sorted user-defined sections and compute which stream channels
     // belong to each section. Channels not assigned to any valid section fall
     // through to the built-in "Channels" list.
@@ -331,7 +334,7 @@ class _SliverChannelsList extends HookConsumerWidget {
     // Starred is exclusive: a starred channel lives only in the Starred section,
     // not in its custom section or the default Channels list.
     final starredStreamChannels = sortChannelsForList(
-      streamChannels.where((c) => starredChannelIds.contains(c.id)).toList(),
+      streamChannels.where((c) => starredChannelIds.contains(c.id)).where(hiveKeeps).toList(), // FORK: hiveKeeps
       sortState.sortModeFor('starred'),
     );
     final ungroupedStreamChannels = sortChannelsForList(
@@ -341,6 +344,7 @@ class _SliverChannelsList extends HookConsumerWidget {
                 !assignedChannelIds.contains(c.id) &&
                 !starredChannelIds.contains(c.id),
           )
+          .where(hiveKeeps) // FORK
           .toList(),
       sortState.sortModeFor('channels'),
     );
@@ -348,8 +352,8 @@ class _SliverChannelsList extends HookConsumerWidget {
     // from channel names); Recent mode reorders by last message time.
     final sortedDmChannels =
         sortState.sortModeFor('dms') == ChannelSortMode.recent
-        ? sortChannelsForList(dmChannels, ChannelSortMode.recent)
-        : dmChannels;
+        ? sortChannelsForList(dmChannels.where(hiveKeeps).toList(), ChannelSortMode.recent) // FORK: hiveKeeps
+        : dmChannels.where(hiveKeeps).toList(); // FORK: hiveKeeps
 
     final liveSectionIds = [for (final s in userSections) s.id];
     void setSortMode(String groupKey, ChannelSortMode mode) {
@@ -374,6 +378,8 @@ class _SliverChannelsList extends HookConsumerWidget {
       padding: EdgeInsets.zero,
       sliver: SliverMainAxisGroup(
         slivers: [
+          // FORK: Hive's Unread toggle above the Channels and DMs inventories.
+          if (hiveTab == HiveHomeTab.channels || hiveTab == HiveHomeTab.dms) const SliverToBoxAdapter(child: HiveUnreadToggle()),
           if (visibleChannels.isEmpty)
             const SliverToBoxAdapter(child: _EmptyState())
           else ...[
@@ -409,6 +415,7 @@ class _SliverChannelsList extends HookConsumerWidget {
                             sectionAssignments[c.id] == section.id &&
                             !starredChannelIds.contains(c.id),
                       )
+                      .where(hiveKeeps) // FORK
                       .toList(),
                   sortState.sortModeFor(sectionSortGroupKey(section.id)),
                 ),
@@ -507,7 +514,7 @@ class _SliverChannelsList extends HookConsumerWidget {
               attentionChannelIds: attentionChannelIds,
               mutedChannelIds: mutedChannelIds,
               currentPubkey: currentPubkey,
-              emptyLabel: 'No stream channels yet',
+              emptyLabel: hiveUnreadOnly ? 'No unread channels' : 'No stream channels yet', // FORK
               sortMode: sortState.sortModeFor('channels'),
               onSortModeChange: (mode) => setSortMode('channels', mode),
               onSelectChannel: onSelectChannel,
@@ -524,7 +531,7 @@ class _SliverChannelsList extends HookConsumerWidget {
               attentionChannelIds: attentionChannelIds,
               mutedChannelIds: mutedChannelIds,
               currentPubkey: currentPubkey,
-              emptyLabel: 'No direct messages yet',
+              emptyLabel: hiveUnreadOnly ? 'No unread DMs' : 'No direct messages yet', // FORK
               sortMode: sortState.sortModeFor('dms'),
               onSortModeChange: (mode) => setSortMode('dms', mode),
               onSelectChannel: onSelectChannel,
