@@ -8,6 +8,7 @@ Read this file before changing anything in the fork, and update it in the same c
 
 The goal is that merging upstream stays cheap. Every rule below serves that.
 
+- **Keep fork-only files under `fork/`** where they need no fixed location in the build.
 - **Prefer upstream's extension points to edits.** Build-time settings (`--dart-define`), the gitignored-by-default `mobile/ios/Flutter/AppOverrides.xcconfig` (tracked here on purpose, see the register), and new files are all conflict-free. Editing a file upstream also edits is the last resort.
 - **Hide, don't delete.** Remove a feature from navigation or entry points rather than deleting its code. Deleted upstream code conflicts with every later upstream change to it; unreachable code does not.
 - **Mark every edit to an upstream file** with a `FORK:` comment on or above the changed lines, saying what changed and why, so `git grep -n "FORK:"` lists them. Files that are wholly ours need no marker; they are listed in the register.
@@ -29,7 +30,9 @@ Fork-owned or fork-modified paths. Kind is one of: identity (signing, ids, names
 |---|---|---|---|
 | `FORK.md` | docs | This file. | None: upstream has no such file. |
 | `AGENTS.md` (top block only) | docs | Points agents at this file before upstream's guide. | Low: a short block above upstream's first heading. |
-| `mobile/ios/Flutter/AppOverrides.xcconfig` | identity | iOS identity: `com.belesky.buzz` (Release), `com.belesky.buzz.dev` (Debug), team `CNPCA4RAWZ`; the app group and keychain group follow. Upstream gitignores this file as a local override slot; the fork force-tracks it so the identity is versioned. It also overrides upstream's per-worktree Debug ids, so Debug builds from two worktrees replace each other. | None: upstream never creates it. |
+| `mobile/ios/Flutter/AppOverrides.xcconfig` | identity | iOS identity: `com.belesky.buzz` (Release), `com.belesky.buzz.dev` (Debug), team `CNPCA4RAWZ`; the app group and keychain group follow. Display name Hive (Release) and Hive Dev (Debug). Upstream gitignores this file as a local override slot; the fork force-tracks it so the identity is versioned. It also overrides upstream's per-worktree Debug ids, so Debug builds from two worktrees replace each other. | None: upstream never creates it. |
+| `mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png` | identity | The Hive icon in every size, replacing upstream's PNGs in place (the set's `Contents.json` is unchanged). | Low: upstream rarely changes its icon. On a conflict take upstream's `Contents.json`, then rerun the generator, which writes every size the set lists. |
+| `fork/` | add | Fork-only tooling and assets. `fork/assets/make_hive_icon.py` draws the icon (`uv run --with pillow python fork/assets/make_hive_icon.py` from the repo root) and keeps the 1024 px master beside it. | None: upstream has no such directory. |
 
 ## Known limits of running beside Block's app
 

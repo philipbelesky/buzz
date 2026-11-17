@@ -9,3 +9,8 @@
 BUNDLE_IDENTIFIER = com.belesky.buzz
 BUNDLE_IDENTIFIER[config=Debug] = com.belesky.buzz.dev
 BUZZ_DEVELOPMENT_TEAM = CNPCA4RAWZ
+
+// The home-screen and share-sheet name. Debug builds carry " Dev" so an Xcode
+// install is distinguishable from a TestFlight one on the same phone.
+APP_DISPLAY_NAME = Hive
+APP_DISPLAY_NAME[config=Debug] = Hive Dev
