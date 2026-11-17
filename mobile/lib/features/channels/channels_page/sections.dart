@@ -373,8 +373,13 @@ class _ChannelSection extends StatelessWidget {
   final ValueChanged<ChannelSortMode>? onSortModeChange;
   final Future<void> Function(Channel channel) onSelectChannel;
 
+  /// FORK: false when a Hive tab's large title already names the only group,
+  /// which then cannot be collapsed.
+  final bool showHeading;
+
   const _ChannelSection({
     super.key,
+    this.showHeading = true,
     required this.title,
     required this.expanded,
     required this.onToggle,
@@ -392,7 +397,7 @@ class _ChannelSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SliverMainAxisGroup(
     slivers: [
-      SliverToBoxAdapter(
+      if (showHeading) SliverToBoxAdapter( // FORK: `if (showHeading)`
         child: _SectionHeader(
           label: title,
           expanded: expanded,
@@ -402,7 +407,7 @@ class _ChannelSection extends StatelessWidget {
         ),
       ),
       CollapsibleSliverBody(
-        expanded: expanded,
+        expanded: expanded || !showHeading, // FORK
         sliver: channels.isEmpty
             ? SliverToBoxAdapter(
                 child: Padding(

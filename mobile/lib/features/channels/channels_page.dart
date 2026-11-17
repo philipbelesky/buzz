@@ -95,6 +95,7 @@ import '../../shared/read_state/read_state_time.dart';
 
 // FORK: Hive's Home tab scope (see FORK.md).
 import '../../fork/hive_home.dart';
+import '../../shared/widgets/ios_navigation_metrics.dart';
 part 'channels_page/body.dart';
 part 'channels_page/sections.dart';
 part 'channels_page/channel_tile.dart';
@@ -695,7 +696,9 @@ class ChannelsPage extends HookConsumerWidget {
       // updates still construct a fresh body with current channel data.
       // FORK: Hive's Activity tab replaces the inventory under this header.
       child: hiveTab == HiveHomeTab.activity && hiveActivityBuilder != null
-          ? hiveActivityBuilder!(topSectionHeight)
+          ? hiveActivityBuilder!(
+              topSectionHeight - IosNavigationMetrics.of(context).largeTitleHeight,
+            )
           : _ChannelsBody(
         soloSliver: soloSliver,
         showTeam: showTeam,
@@ -718,6 +721,9 @@ class ChannelsPage extends HookConsumerWidget {
         onSelectChannel: openChannel,
       ),
       builder: (context, treatment, child) => FrostedScaffold(
+        // FORK: Activity's lists scroll inside FrostedScaffold's pinned body,
+        // so its filters ride up with the collapsing large title.
+        nativePinnedBody: hiveTab == HiveHomeTab.activity,
         backgroundColor: usesPinnedGradient
             ? Colors.transparent
             : context.colors.surface,

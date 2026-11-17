@@ -110,7 +110,12 @@ class ActivityPage extends HookConsumerWidget {
     final sender = useState('Anyone');
     final agents = ref.watch(knownAgentPubkeysProvider);
     final profiles = ref.watch(userCacheProvider);
-    final scrollController = useScrollController();
+    final ownScrollController = useScrollController();
+    // FORK: under Hive's Home header the lists must use the pinned body's
+    // primary controller, which collapses the large title as they scroll.
+    final scrollController = hiveTopInset != null
+        ? PrimaryScrollController.of(context)
+        : ownScrollController;
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
     useEffect(() {
       final tabReselection = this.tabReselection;

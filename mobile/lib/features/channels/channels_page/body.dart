@@ -243,6 +243,7 @@ class _SliverChannelsList extends HookConsumerWidget {
     // so upstream's lines keep their indentation and merge cleanly.
     final showsChannels = HiveInventoryScope.showsChannels(context);
     final showsDms = HiveInventoryScope.showsDms(context);
+    final hiveTab = HiveInventoryScope.maybeOf(context);
     final streamChannels = visibleChannels
         .where((channel) => channel.isStream)
         .toList();
@@ -495,6 +496,8 @@ class _SliverChannelsList extends HookConsumerWidget {
             if (showsChannels && (userSections.isNotEmpty || starredStreamChannels.isNotEmpty))
               const SliverToBoxAdapter(child: SizedBox(height: Grid.xxs)),
             if (showsChannels) _ChannelSection(
+              // FORK: no heading when Hive's Channels title names the only group.
+              showHeading: !(hiveTab == HiveHomeTab.channels && userSections.isEmpty && starredStreamChannels.isEmpty),
               key: const ValueKey('channels'),
               title: 'Channels',
               expanded: channelsExpanded.value,
@@ -511,6 +514,7 @@ class _SliverChannelsList extends HookConsumerWidget {
             ),
             if (showsChannels && showsDms) const SliverToBoxAdapter(child: SizedBox(height: Grid.xxs)),
             if (showsDms) _ChannelSection(
+              showHeading: hiveTab != HiveHomeTab.dms, // FORK: titled "DMs" already
               key: const ValueKey('dms'),
               title: 'DMs',
               expanded: dmsExpanded.value,
