@@ -32,7 +32,7 @@ Fork-owned or fork-modified paths. Kind is one of: identity (signing, ids, names
 | `AGENTS.md` (top block only) | docs | Points agents at this file before upstream's guide. | Low: a short block above upstream's first heading. |
 | `mobile/ios/Flutter/AppOverrides.xcconfig` | identity | iOS identity: `com.belesky.buzz` (Release), `com.belesky.buzz.dev` (Debug), team `CNPCA4RAWZ`; the app group and keychain group follow. Display name Hive (Release) and Hive Dev (Debug). Upstream gitignores this file as a local override slot; the fork force-tracks it so the identity is versioned. It also overrides upstream's per-worktree Debug ids, so Debug builds from two worktrees replace each other. | None: upstream never creates it. |
 | `mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png` | identity | The Hive icon in every size, replacing upstream's PNGs in place (the set's `Contents.json` is unchanged). | Low: upstream rarely changes its icon. On a conflict take upstream's `Contents.json`, then rerun the generator, which writes every size the set lists. |
-| `fork/` | add | Fork-only tooling and assets. `fork/assets/make_hive_icon.py` draws the icon (`uv run --with pillow python fork/assets/make_hive_icon.py` from the repo root) and keeps the 1024 px master beside it. | None: upstream has no such directory. |
+| `fork/` | add | Fork-only tooling and assets. `fork/assets/make_hive_icon.py` draws the icon (`uv run --with pillow python fork/assets/make_hive_icon.py` from the repo root) and keeps the 1024 px master beside it; `fork/release/testflight.sh` builds and uploads to TestFlight. | None: upstream has no such directory. |
 
 ## Known limits of running beside Block's app
 
@@ -48,6 +48,16 @@ Fork-owned or fork-modified paths. Kind is one of: identity (signing, ids, names
 3. Check the register against `git grep -n "FORK:"` and `git diff upstream/main...main --stat`; every path in the diff should be in the register.
 4. From `mobile/` with Hermit active (`. bin/activate-hermit` at the repo root): `flutter pub get`, `flutter analyze`, `flutter test`, then `flutter build ios --simulator --debug` and launch it. Note any upstream test failures that also fail on `upstream/main` rather than fixing them here.
 5. Add a row to the log below and push.
+
+## Releasing to TestFlight
+
+The iOS app is App Store Connect app `6835712117` (bundle id `com.belesky.buzz`, team `CNPCA4RAWZ`). From a clean checkout of `main` on Repose:
+
+```bash
+fork/release/testflight.sh
+```
+
+It archives with the shared development identity, re-signs with the cloud-managed distribution certificate of the Apple account signed in to Xcode, and uploads with that account. The version is `HIVE_VERSION` (default in the script) and the build number is the commit count of `HEAD`, which only grows because upstream is merged, never rebased. Logs and the archive land in `mobile/build/hive-testflight/` (gitignored). `--no-upload` stops at an `.ipa`. App Store Connect then processes the build for 10–30 minutes before TestFlight offers it to the internal testing group. Build 1 (0.1.0) was uploaded by hand on 17 Nov 2026.
 
 ## Integration log
 
