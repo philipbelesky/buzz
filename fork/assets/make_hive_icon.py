@@ -4,7 +4,8 @@ FORK: fork-only file (see FORK.md). Run from the repo root:
 
     uv run --with pillow python fork/assets/make_hive_icon.py
 
-A white hexagonal speech bubble with three honey hexagons, on a honey gradient.
+A blue speech bubble with three white hexagons as typing dots, on white:
+Safari's palette.
 Drawn at 4x and downsampled; corners are rounded by blurring and re-thresholding.
 """
 import json
@@ -26,46 +27,51 @@ def rounded(mask, radius):
 def lerp(a, b, t):
     return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
-# Background: honey gradient, lighter top-left to deeper bottom-right.
-top, bottom = (255, 206, 72), (240, 146, 0)
-grad = Image.linear_gradient("L").resize((2 * S, 2 * S)).rotate(-20, resample=Image.BICUBIC).crop((S // 2, S // 2, S // 2 + S, S // 2 + S))
-bg = Image.composite(Image.new("RGB", (S, S), bottom), Image.new("RGB", (S, S), top), grad)
+def vertical_gradient(top, bottom, y0=0, y1=S):
+    """An RGB canvas shading from `top` at y0 to `bottom` at y1."""
+    ramp = Image.linear_gradient("L").resize((S, max(1, int(y1 - y0))))
+    band = Image.composite(Image.new("RGB", ramp.size, bottom), Image.new("RGB", ramp.size, top), ramp)
+    canvas = Image.new("RGB", (S, S), top)
+    canvas.paste(band, (0, int(y0)))
+    canvas.paste(Image.new("RGB", (S, S - int(y1)), bottom), (0, int(y1)))
+    return canvas
 
-# Bubble: a pointy-top hexagon with a tail at the lower left.
-cx, cy, r = 512 * k, 488 * k, 318 * k
+# Background: Safari's near-white, a touch cooler at the bottom.
+img = vertical_gradient((255, 255, 255), (236, 238, 243))
+
+# Bubble: a circle with a tail at the lower left, like a speech bubble.
+cx, cy, r = 512 * k, 500 * k, 372 * k
 bubble = Image.new("L", (S, S), 0)
 d = ImageDraw.Draw(bubble)
-d.polygon(hexagon(cx, cy, r), fill=255)
-# Tail: a wedge growing out of the lower-left corner, pointing down-left.
-pts = hexagon(cx, cy, r)
-bottom_v = max(pts, key=lambda p: p[1])
-L = min((p for p in pts if p[1] > cy), key=lambda p: p[0])
-UL = min((p for p in pts if p[1] < cy), key=lambda p: p[0])
-def towards(p, q, t):
-    return (p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t)
-base1 = towards(L, UL, 0.10)
-base2 = towards(L, bottom_v, 0.28)
-tip = (L[0] - 46 * k, L[1] + 118 * k)
-d.polygon([base1, base2, tip], fill=255)
-bubble = rounded(bubble, 26 * k)
+d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=255)
+def on_circle(degrees, radius=r):
+    a = math.radians(degrees)
+    return (cx + radius * math.cos(a), cy + radius * math.sin(a))
+# Tail: a wedge whose base spans the circle around 135° (lower left).
+d.polygon([on_circle(118), on_circle(152), (cx - 0.93 * r, cy + 0.98 * r)], fill=255)
+bubble = rounded(bubble, 22 * k)
 
 # Soft shadow under the bubble.
-shadow = bubble.filter(ImageFilter.GaussianBlur(40 * k)).point(lambda v: int(v * 0.28))
-shadow = ImageChops.offset(shadow, 0, int(26 * k))
-img = Image.composite(Image.new("RGB", (S, S), (150, 80, 0)), bg, shadow)
-img = Image.composite(Image.new("RGB", (S, S), (255, 255, 255)), img, bubble)
+shadow = bubble.filter(ImageFilter.GaussianBlur(36 * k)).point(lambda v: int(v * 0.30))
+shadow = ImageChops.offset(shadow, 0, int(22 * k))
+img = Image.composite(Image.new("RGB", (S, S), (40, 70, 140)), img, shadow)
 
-# Three small hexagons inside, like a typing indicator.
+# Safari's blue: bright cyan at the top to a deep blue at the bottom.
+blue = vertical_gradient((40, 205, 255), (18, 98, 240), cy - r, cy + r)
+img = Image.composite(blue, img, bubble)
+
+# A thin lighter rim inside the edge, as on Safari's dial.
+inner = rounded(bubble.filter(ImageFilter.MinFilter(int(18 * k) | 1)), 8 * k)
+rim = ImageChops.subtract(bubble, inner).point(lambda v: int(v * 0.35))
+img = Image.composite(Image.new("RGB", (S, S), (255, 255, 255)), img, rim)
+
+# Three white hexagons inside, like a typing indicator.
 dots = Image.new("L", (S, S), 0)
 dd = ImageDraw.Draw(dots)
-for i, dx in enumerate((-118, 0, 118)):
-    dd.polygon(hexagon(cx + dx * k, cy + 6 * k, 50 * k), fill=255)
-dots = rounded(dots, 9 * k)
-colours = [(245, 170, 20), (240, 150, 0), (225, 128, 0)]
-for i, dx in enumerate((-118, 0, 118)):
-    m = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(m).rectangle([cx + (dx - 70) * k, 0, cx + (dx + 70) * k, S], fill=255)
-    img = Image.composite(Image.new("RGB", (S, S), colours[i]), img, ImageChops.multiply(dots, m))
+for dx in (-150, 0, 150):
+    dd.polygon(hexagon(cx + dx * k, cy, 62 * k), fill=255)
+dots = rounded(dots, 10 * k)
+img = Image.composite(Image.new("RGB", (S, S), (255, 255, 255)), img, dots)
 
 master = img.resize((1024, 1024), Image.LANCZOS)
 iconset = Path(__file__).resolve().parents[2] / "mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset"
