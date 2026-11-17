@@ -29,7 +29,7 @@ Fork-owned or fork-modified paths. Kind is one of: identity (signing, ids, names
 |---|---|---|---|
 | `FORK.md` | docs | This file. | None: upstream has no such file. |
 | `AGENTS.md` (top block only) | docs | Points agents at this file before upstream's guide. | Low: a short block above upstream's first heading. |
-| `mobile/ios/Flutter/AppOverrides.xcconfig` | identity | Philip's bundle ids, team and display name for iOS Debug and Release builds. Upstream gitignores this file as a local override slot; the fork force-tracks it so the identity is versioned. | None: upstream never creates it. |
+| `mobile/ios/Flutter/AppOverrides.xcconfig` | identity | iOS identity: `com.belesky.buzz` (Release), `com.belesky.buzz.dev` (Debug), team `CNPCA4RAWZ`; the app group and keychain group follow. Upstream gitignores this file as a local override slot; the fork force-tracks it so the identity is versioned. It also overrides upstream's per-worktree Debug ids, so Debug builds from two worktrees replace each other. | None: upstream never creates it. |
 
 ## Known limits of running beside Block's app
 

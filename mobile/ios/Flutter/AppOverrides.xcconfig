@@ -1,0 +1,11 @@
+// FORK: philipbelesky/buzz identity. Upstream gitignores this file as a local
+// override slot and includes it last from Debug.xcconfig and Release.xcconfig,
+// so every value here wins without editing a tracked upstream file. The fork
+// force-tracks it (`git add -f`); see FORK.md.
+//
+// Release (TestFlight/App Store) and Debug (Xcode installs) get different ids,
+// as upstream's do, so both can sit on one phone. The app group and keychain
+// access group follow BUNDLE_IDENTIFIER in the upstream xcconfigs.
+BUNDLE_IDENTIFIER = com.belesky.buzz
+BUNDLE_IDENTIFIER[config=Debug] = com.belesky.buzz.dev
+BUZZ_DEVELOPMENT_TEAM = CNPCA4RAWZ
