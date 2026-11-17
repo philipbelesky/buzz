@@ -141,6 +141,11 @@ class HomePage extends HookConsumerWidget {
       // FORK: with the filters gone, ChannelsPage draws its native header,
       // which carries Search and New in place of the bell and community menu.
       onSearch: kHiveTabs ? openSearch : null,
+      // FORK: Hive's Activity tab, drawn under ChannelsPage's header.
+      hiveActivityBuilder: kHiveTabs
+          ? (topInset) =>
+                ActivityPage(hiveTopInset: topInset, tabReselection: reselect)
+          : null,
       messagesActionsWidth:
           2 * (defaultTargetPlatform == TargetPlatform.iOS ? 44 : 48) + Grid.xs,
       messagesActionsBuilder: (openSwitcher, avatarKey) {
@@ -318,41 +323,63 @@ class HomePage extends HookConsumerWidget {
         communitySurfaceProgress.value = progress;
       },
     );
-    // FORK: Activity is a tab, and Channels and DMs are the two halves of the
-    // inventory, chosen through HiveInventoryScope.
-    final hiveContent = HiveInventoryScope(
-      tab: tab.value,
-      child: tab.value == HiveHomeTab.activity
-          ? ActivityPage(showClose: false, tabReselection: reselect)
-          : messages,
-    );
-    Widget hiveTabBar() => Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(left: Grid.gutter),
-        // The platter is taller than upstream's 56pt slot: centre the platter
-        // on the slot and let the bar's own bottom padding hang below it.
-        child: OverflowBox(
-          alignment: const Alignment(
-            -1,
-            -1 +
-                (HiveTabBar.platterHeight - mobileTabBarHeight) /
-                    (HiveTabBar.height - mobileTabBarHeight),
-          ),
-          maxHeight: HiveTabBar.height,
-          child: HiveTabBar(
-            items: [for (final t in HiveHomeTab.values) t.item],
-            selectedIndex: tab.value.index,
-            badges: {if (hasUnreadInbox) HiveHomeTab.activity.index},
-            tint: context.colors.primary,
-            onSelected: (index) {
-              final selected = HiveHomeTab.values[index];
-              if (selected == tab.value) {
-                reselect.value++;
-              } else {
-                tab.value = selected;
-              }
-            },
+    // FORK: one ChannelsPage serves all three Hive tabs, so they share its
+    // header; HiveInventoryScope picks what it lists (or Activity).
+    final hiveContent = HiveInventoryScope(tab: tab.value, child: messages);
+    // The tab bar at the bottom left and New at the bottom right, the way iOS
+    // 26 apps pair a tab bar with a separate round button. The bar's platter
+    // is taller than upstream's 56pt slot: centre the platter on the slot and
+    // let the bar's own bottom padding hang below it.
+    Widget hiveTabBar() => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Grid.gutter),
+      child: OverflowBox(
+        alignment: const Alignment(
+          0,
+          -1 +
+              (HiveTabBar.platterHeight - mobileTabBarHeight) /
+                  (HiveTabBar.height - mobileTabBarHeight),
+        ),
+        maxHeight: HiveTabBar.height,
+        child: SizedBox(
+          height: HiveTabBar.height,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              HiveTabBar(
+                items: [for (final t in HiveHomeTab.values) t.item],
+                selectedIndex: tab.value.index,
+                badges: {if (hasUnreadInbox) HiveHomeTab.activity.index},
+                tint: context.colors.primary,
+                onSelected: (index) {
+                  final selected = HiveHomeTab.values[index];
+                  if (selected == tab.value) {
+                    reselect.value++;
+                  } else {
+                    tab.value = selected;
+                  }
+                },
+              ),
+              const Spacer(),
+              IosMessageCreateButton(
+                actions: [
+                  (
+                    label: 'New channel',
+                    symbol: 'number',
+                    onPressed: newChannel.value,
+                  ),
+                  (
+                    label: 'New DM',
+                    symbol: 'bubble.left',
+                    onPressed: newDm.value,
+                  ),
+                ],
+                icon: 'plus',
+                accessibilityLabel: 'New',
+                width: HiveTabBar.platterHeight,
+                height: HiveTabBar.platterHeight,
+                plain: false,
+              ),
+            ],
           ),
         ),
       ),

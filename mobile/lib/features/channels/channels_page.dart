@@ -145,6 +145,7 @@ class ChannelsPage extends HookConsumerWidget {
     this.communityAppearancePageBuilder,
     required this.onSettingsTransitionProgress,
     this.tabReselection,
+    this.hiveActivityBuilder,
     super.key,
   });
 
@@ -180,6 +181,10 @@ class ChannelsPage extends HookConsumerWidget {
   /// Notifies this page when its already-selected tab is tapped again.
   final ValueListenable<int>? tabReselection;
 
+  /// FORK: builds Hive's Activity tab content under this page's header,
+  /// given the header's height, so all three Hive tabs share one header.
+  final Widget Function(double topInset)? hiveActivityBuilder;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Resolve permissions before the community menu is opened.
@@ -187,6 +192,8 @@ class ChannelsPage extends HookConsumerWidget {
       ref.watch(currentCommunityRoleProvider);
     }
     final channelsAsync = ref.watch(channelsProvider);
+    // FORK: Hive's Home tab, or null under upstream's Home.
+    final hiveTab = HiveInventoryScope.maybeOf(context);
     final sessionState = ref.watch(relaySessionProvider);
     final currentPubkey = ref
         .watch(profileProvider)
@@ -215,6 +222,7 @@ class ChannelsPage extends HookConsumerWidget {
           ? _kTopSectionBottomPadding
           : filterContentHeight,
       useNativeNavigation: messagesFilters == null,
+      nativeLargeTitle: hiveTab != null, // FORK: Hive's large titles.
     );
     // A sheet's dim barrier can't composite over Home's native soft edge, so
     // use the Flutter backdrop while another route covers this page.
@@ -661,11 +669,34 @@ class ChannelsPage extends HookConsumerWidget {
       return () => active = false;
     }, [newChannelAction, newDmAction, currentPubkey]);
 
+    // FORK: the leading community avatar's action, for Hive's trailing slot.
+    IosNavigationAction hiveCommunityAction() => IosNavigationAction(
+      label: 'Community settings',
+      onAvatarBoundsChanged: (bounds) {
+        final header = headerKey.currentContext?.findRenderObject();
+        if (header is RenderBox) {
+          nativeCommunityAvatarBounds.value =
+              header.globalToLocal(bounds.topLeft) & bounds.size;
+        }
+      },
+      avatarHidden: communityFlightActive.value,
+      avatarIdentity: activeCommunity?.id,
+      symbol: 'building.2.crop.circle',
+      imageUrl: communityAvatar,
+      avatarInitial: communityName.isEmpty
+          ? '?'
+          : communityName.substring(0, 1).toUpperCase(),
+      onPressed: openCommunitySwitcher,
+    );
+
     final page = ValueListenableBuilder(
       valueListenable: headerTreatment,
       // Retain the inventory during header animation. Provider and parent
       // updates still construct a fresh body with current channel data.
-      child: _ChannelsBody(
+      // FORK: Hive's Activity tab replaces the inventory under this header.
+      child: hiveTab == HiveHomeTab.activity && hiveActivityBuilder != null
+          ? hiveActivityBuilder!(topSectionHeight)
+          : _ChannelsBody(
         soloSliver: soloSliver,
         showTeam: showTeam,
         showTeamHeading: showTeamHeading,
@@ -698,7 +729,10 @@ class ChannelsPage extends HookConsumerWidget {
           nativeTitle: nativeDuoTitle ? 'Messages' : HiveInventoryScope.titleOf(context),
           useNativeNavigation: messagesFilters == null,
           nativeViewSuppressed: headerNativeSuppressed,
-          nativeLeading: messagesFilters != null
+          // FORK: Hive uses a large title, and its community avatar moves to
+          // the trailing actions (hiveCommunityAction below).
+          nativeLargeTitle: hiveTab != null,
+          nativeLeading: messagesFilters != null || hiveTab != null
               ? null
               : IosNavigationAction(
                   label: 'Community settings',
@@ -731,6 +765,10 @@ class ChannelsPage extends HookConsumerWidget {
                       icon: BuzzIcons.search300,
                       onPressed: onSearch,
                     ),
+                  // FORK: Hive puts Create at the bottom right and the
+                  // community avatar here instead.
+                  if (hiveTab != null) hiveCommunityAction(),
+                  if (hiveTab == null)
                   IosNavigationAction(
                     label: 'Create',
                     symbol: 'plus',

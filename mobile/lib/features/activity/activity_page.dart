@@ -90,15 +90,16 @@ const _activityTypeOptions = {
 };
 
 class ActivityPage extends HookConsumerWidget {
-  // FORK: `showClose` is false when Hive's Home shows Activity as a tab
-  // rather than a pushed page, which has nothing to close.
-  const ActivityPage({this.tabReselection, this.showClose = true, super.key});
+  // FORK: `hiveTopInset` is set when Hive's Home shows Activity as a tab
+  // under the shared Home header, which replaces this page's own title row.
+  const ActivityPage({this.tabReselection, this.hiveTopInset, super.key});
 
   /// Notifies this page when its already-selected tab is tapped again.
   final ValueListenable<int>? tabReselection;
 
-  /// FORK: whether the header carries the close button.
-  final bool showClose;
+  /// FORK: the height of Hive's Home header above this page, or null when
+  /// the page is pushed with its own title and close button.
+  final double? hiveTopInset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -539,18 +540,20 @@ class ActivityPage extends HookConsumerWidget {
         backgroundColor: context.colors.surface,
         body: SafeArea(
           bottom: false,
+          top: hiveTopInset == null, // FORK
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
+              // FORK: under Hive's Home header, no title row of its own.
+              if (hiveTopInset != null) SizedBox(height: hiveTopInset),
+              if (hiveTopInset == null) Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: Grid.gutter,
                   vertical: Grid.xxs,
                 ),
                 child: Row(
                   children: [
-                    // FORK: `if (showClose)` (unformatted to keep upstream's lines).
-                    if (showClose) defaultTargetPlatform == TargetPlatform.iOS
+                    defaultTargetPlatform == TargetPlatform.iOS
                         ? Padding(
                             padding: const EdgeInsets.only(right: Grid.twelve),
                             child: IosGlassNavigationButton(
