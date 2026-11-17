@@ -68,8 +68,8 @@ img = Image.composite(Image.new("RGB", (S, S), (255, 255, 255)), img, rim)
 # Three white hexagons inside, like a typing indicator.
 dots = Image.new("L", (S, S), 0)
 dd = ImageDraw.Draw(dots)
-for dx in (-150, 0, 150):
-    dd.polygon(hexagon(cx + dx * k, cy, 62 * k), fill=255)
+for dx in (-172, 0, 172):
+    dd.polygon(hexagon(cx + dx * k, cy, 70 * k), fill=255)
 dots = rounded(dots, 10 * k)
 img = Image.composite(Image.new("RGB", (S, S), (255, 255, 255)), img, dots)
 
