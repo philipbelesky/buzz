@@ -92,6 +92,8 @@ class HomePage extends HookConsumerWidget {
     final tab = useState(HiveHomeTab.channels);
     // FORK: each inventory tab keeps its own Unread toggle.
     final unreadOnlyTabs = useState(<HiveHomeTab>{});
+    final activityFilters = useMemoized(HiveActivityFilters.new);
+    useEffect(() => activityFilters.dispose, [activityFilters]);
     final hasUnreadInbox = ref.watch(inboxHasUnreadProvider);
     final inboxLabel = hasUnreadInbox ? 'Activity, unread items' : 'Activity';
     final reselect = useValueNotifier(0);
@@ -145,8 +147,11 @@ class HomePage extends HookConsumerWidget {
       onSearch: kHiveTabs ? openSearch : null,
       // FORK: Hive's Activity tab, drawn under ChannelsPage's header.
       hiveActivityBuilder: kHiveTabs
-          ? (topInset) =>
-                ActivityPage(hiveTopInset: topInset, tabReselection: reselect)
+          ? (topInset) => ActivityPage(
+              hiveTopInset: topInset,
+              hiveFilters: activityFilters,
+              tabReselection: reselect,
+            )
           : null,
       messagesActionsWidth:
           2 * (defaultTargetPlatform == TargetPlatform.iOS ? 44 : 48) + Grid.xs,

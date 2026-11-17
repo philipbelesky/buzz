@@ -54,6 +54,8 @@ import 'inbox_item.dart';
 import 'inbox_local_state_provider.dart';
 import 'inbox_read_state.dart';
 import 'reminders_provider.dart' hide ReminderTarget;
+// FORK: Hive's Home keeps Activity's filters (see FORK.md).
+import '../../fork/hive_home.dart';
 
 part 'activity_page/header_actions.dart';
 part 'activity_page/inbox_row.dart';
@@ -92,7 +94,12 @@ const _activityTypeOptions = {
 class ActivityPage extends HookConsumerWidget {
   // FORK: `hiveTopInset` is set when Hive's Home shows Activity as a tab
   // under the shared Home header, which replaces this page's own title row.
-  const ActivityPage({this.tabReselection, this.hiveTopInset, super.key});
+  const ActivityPage({
+    this.tabReselection,
+    this.hiveTopInset,
+    this.hiveFilters,
+    super.key,
+  });
 
   /// Notifies this page when its already-selected tab is tapped again.
   final ValueListenable<int>? tabReselection;
@@ -101,13 +108,26 @@ class ActivityPage extends HookConsumerWidget {
   /// the page is pushed with its own title and close button.
   final double? hiveTopInset;
 
+  /// FORK: Home's copy of the filter choices, so they outlast this page.
+  final HiveActivityFilters? hiveFilters;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feedAsync = ref.watch(activityProvider);
     final channelsAsync = ref.watch(channelsProvider);
-    final filter = useState(InboxFilter.all);
-    final unreadOnly = useState(false);
-    final sender = useState('Anyone');
+    // FORK: Hive's Home holds the filters (`hiveFilters`) when it has them.
+    final ownFilter = useState(InboxFilter.all);
+    final ownUnreadOnly = useState(false);
+    final ownSender = useState('Anyone');
+    final filter = hiveFilters?.filter ?? ownFilter;
+    final unreadOnly = hiveFilters?.unreadOnly ?? ownUnreadOnly;
+    final sender = hiveFilters?.sender ?? ownSender;
+    useListenable(
+      useMemoized(
+        () => Listenable.merge([filter, unreadOnly, sender]),
+        [filter, unreadOnly, sender],
+      ),
+    );
     final agents = ref.watch(knownAgentPubkeysProvider);
     final profiles = ref.watch(userCacheProvider);
     final ownScrollController = useScrollController();

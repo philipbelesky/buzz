@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_native/hive_native.dart';
 
+import '../features/activity/inbox_item.dart';
 import '../shared/theme/buzz_icons.dart';
 import '../shared/theme/theme.dart';
 import '../shared/widgets/ios_glass_navigation_button.dart';
@@ -128,5 +129,19 @@ class HiveUnreadToggle extends StatelessWidget {
       ),
       child: Align(alignment: Alignment.centerLeft, child: chip),
     );
+  }
+}
+
+/// Activity's filter choices, held by Home so they survive switching tabs:
+/// the Activity tab's page is rebuilt each time it is shown.
+class HiveActivityFilters {
+  final filter = ValueNotifier(InboxFilter.all);
+  final sender = ValueNotifier('Anyone');
+  final unreadOnly = ValueNotifier(false);
+
+  void dispose() {
+    filter.dispose();
+    sender.dispose();
+    unreadOnly.dispose();
   }
 }
