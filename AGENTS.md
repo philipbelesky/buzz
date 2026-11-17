@@ -1,3 +1,6 @@
+<!-- FORK: philipbelesky/buzz. Keep this block above upstream's guide. -->
+> **This checkout is Philip Belesky's fork of block/buzz.** Read [FORK.md](FORK.md) before changing anything: it sets the rules for diverging from upstream, the register of every fork change, and how upstream is merged in. Its rules take precedence over upstream's PR and contribution process below, which applies only to work proposed back to block/buzz.
+
 # AGENTS.md — AI Agent Contributor Guide
 
 This guide is for AI agents contributing to the Buzz codebase. It covers
