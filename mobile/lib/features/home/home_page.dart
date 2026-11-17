@@ -29,6 +29,9 @@ import '../search/search_page.dart';
 import 'home_screen_shortcut_host.dart';
 import 'messages_filters.dart';
 import 'messages_navigation_bar.dart';
+// FORK: Hive's Home tabs (see FORK.md).
+import 'package:hive_native/hive_native.dart';
+import '../../fork/hive_home.dart';
 import '../../shared/widgets/covered_route_keyboard_insets.dart';
 
 class HomePage extends HookConsumerWidget {
@@ -85,6 +88,8 @@ class HomePage extends HookConsumerWidget {
 
     final communitySurfaceProgress = useState(0.0);
     final filter = useState('All');
+    // FORK: the selected Hive Home tab.
+    final tab = useState(HiveHomeTab.channels);
     final hasUnreadInbox = ref.watch(inboxHasUnreadProvider);
     final inboxLabel = hasUnreadInbox ? 'Activity, unread items' : 'Activity';
     final reselect = useValueNotifier(0);
@@ -133,6 +138,9 @@ class HomePage extends HookConsumerWidget {
     );
     final messages = ChannelsPage(
       settingsPageBuilder: settingsPageBuilder,
+      // FORK: with the filters gone, ChannelsPage draws its native header,
+      // which carries Search and New in place of the bell and community menu.
+      onSearch: kHiveTabs ? openSearch : null,
       messagesActionsWidth:
           2 * (defaultTargetPlatform == TargetPlatform.iOS ? 44 : 48) + Grid.xs,
       messagesActionsBuilder: (openSwitcher, avatarKey) {
@@ -280,15 +288,19 @@ class HomePage extends HookConsumerWidget {
           ),
         ];
       },
-      messagesFilters: (isCollapsed) => MessagesFilters(
-        isCollapsed: isCollapsed,
-        selected: filter.value,
-        onSelected: (value) {
-          filter.value = value;
-          reselect.value++;
-        },
-      ),
-      soloSliver: solo == null
+      // FORK: no All/Solo/Team filter; Hive always shows "All".
+      messagesFilters: kHiveTabs
+          ? null
+          : (isCollapsed) => MessagesFilters(
+              isCollapsed: isCollapsed,
+              selected: filter.value,
+              onSelected: (value) {
+                filter.value = value;
+                reselect.value++;
+              },
+            ),
+      // FORK: Solo (personal agent chats) is hidden in Hive.
+      soloSliver: kHiveTabs || solo == null
           ? null
           : SliverOffstage(
               key: const ValueKey('messages-solo-inventory'),
@@ -296,7 +308,7 @@ class HomePage extends HookConsumerWidget {
               sliver: solo,
             ),
       showTeam: filter.value != 'Solo',
-      showTeamHeading: filter.value == 'All',
+      showTeamHeading: !kHiveTabs && filter.value == 'All',
       newChannelAction: newChannel,
       newDmAction: newDm,
       communityInvitePageBuilder: communityInvitePageBuilder,
@@ -305,6 +317,45 @@ class HomePage extends HookConsumerWidget {
       onSettingsTransitionProgress: (progress) {
         communitySurfaceProgress.value = progress;
       },
+    );
+    // FORK: Activity is a tab, and Channels and DMs are the two halves of the
+    // inventory, chosen through HiveInventoryScope.
+    final hiveContent = HiveInventoryScope(
+      tab: tab.value,
+      child: tab.value == HiveHomeTab.activity
+          ? ActivityPage(showClose: false, tabReselection: reselect)
+          : messages,
+    );
+    Widget hiveTabBar() => Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(left: Grid.gutter),
+        // The platter is taller than upstream's 56pt slot: centre the platter
+        // on the slot and let the bar's own bottom padding hang below it.
+        child: OverflowBox(
+          alignment: const Alignment(
+            -1,
+            -1 +
+                (HiveTabBar.platterHeight - mobileTabBarHeight) /
+                    (HiveTabBar.height - mobileTabBarHeight),
+          ),
+          maxHeight: HiveTabBar.height,
+          child: HiveTabBar(
+            items: [for (final t in HiveHomeTab.values) t.item],
+            selectedIndex: tab.value.index,
+            badges: {if (hasUnreadInbox) HiveHomeTab.activity.index},
+            tint: context.colors.primary,
+            onSelected: (index) {
+              final selected = HiveHomeTab.values[index];
+              if (selected == tab.value) {
+                reselect.value++;
+              } else {
+                tab.value = selected;
+              }
+            },
+          ),
+        ),
+      ),
     );
     final bottom = mobileTabBarBottom(context);
     Widget navigationBar(Axis axis) => MessagesNavigationBar(
@@ -379,7 +430,10 @@ class HomePage extends HookConsumerWidget {
                     builder: (_, nativeControlsVisible) =>
                         (defaultTargetPlatform != TargetPlatform.iOS ||
                             nativeControlsVisible)
-                        ? Center(child: navigationBar(Axis.horizontal))
+                        // FORK: Hive's tab bar in place of Search/New/Bestie.
+                        ? kHiveTabs
+                              ? hiveTabBar()
+                              : Center(child: navigationBar(Axis.horizontal))
                         : const SizedBox.shrink(),
                   ),
                 ),
@@ -495,7 +549,8 @@ class HomePage extends HookConsumerWidget {
                             );
                           },
                         )
-                      : messages,
+                      // FORK: the selected Hive tab's content.
+                      : (kHiveTabs ? hiveContent : messages),
                 ),
               ),
             ),

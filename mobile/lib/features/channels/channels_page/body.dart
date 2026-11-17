@@ -238,6 +238,11 @@ class _SliverChannelsList extends HookConsumerWidget {
     final visibleChannels = channels
         .where((channel) => channel.isMember && !channel.isArchived)
         .toList();
+    // FORK: Hive's Home tabs list stream channels and DMs separately; the
+    // `showsChannels` and `showsDms` guards below are unformatted on purpose,
+    // so upstream's lines keep their indentation and merge cleanly.
+    final showsChannels = HiveInventoryScope.showsChannels(context);
+    final showsDms = HiveInventoryScope.showsDms(context);
     final streamChannels = visibleChannels
         .where((channel) => channel.isStream)
         .toList();
@@ -372,7 +377,7 @@ class _SliverChannelsList extends HookConsumerWidget {
             const SliverToBoxAdapter(child: _EmptyState())
           else ...[
             // Starred channels (exclusive — pinned above all sections).
-            if (starredStreamChannels.isNotEmpty)
+            if (showsChannels && starredStreamChannels.isNotEmpty)
               _ChannelSection(
                 key: const ValueKey('starred'),
                 title: 'Starred',
@@ -389,7 +394,7 @@ class _SliverChannelsList extends HookConsumerWidget {
                 onSelectChannel: onSelectChannel,
               ),
             // User-defined sections for stream channels, in user-defined order.
-            for (final section in userSections) ...[
+            if (showsChannels) for (final section in userSections) ...[
               if (section != userSections.first ||
                   starredStreamChannels.isNotEmpty)
                 const SliverToBoxAdapter(child: SizedBox(height: Grid.xxs)),
@@ -487,9 +492,9 @@ class _SliverChannelsList extends HookConsumerWidget {
                 },
               ),
             ],
-            if (userSections.isNotEmpty || starredStreamChannels.isNotEmpty)
+            if (showsChannels && (userSections.isNotEmpty || starredStreamChannels.isNotEmpty))
               const SliverToBoxAdapter(child: SizedBox(height: Grid.xxs)),
-            _ChannelSection(
+            if (showsChannels) _ChannelSection(
               key: const ValueKey('channels'),
               title: 'Channels',
               expanded: channelsExpanded.value,
@@ -504,8 +509,8 @@ class _SliverChannelsList extends HookConsumerWidget {
               onSortModeChange: (mode) => setSortMode('channels', mode),
               onSelectChannel: onSelectChannel,
             ),
-            const SliverToBoxAdapter(child: SizedBox(height: Grid.xxs)),
-            _ChannelSection(
+            if (showsChannels && showsDms) const SliverToBoxAdapter(child: SizedBox(height: Grid.xxs)),
+            if (showsDms) _ChannelSection(
               key: const ValueKey('dms'),
               title: 'DMs',
               expanded: dmsExpanded.value,

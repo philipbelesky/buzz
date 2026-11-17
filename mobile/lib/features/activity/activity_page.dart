@@ -90,10 +90,15 @@ const _activityTypeOptions = {
 };
 
 class ActivityPage extends HookConsumerWidget {
-  const ActivityPage({this.tabReselection, super.key});
+  // FORK: `showClose` is false when Hive's Home shows Activity as a tab
+  // rather than a pushed page, which has nothing to close.
+  const ActivityPage({this.tabReselection, this.showClose = true, super.key});
 
   /// Notifies this page when its already-selected tab is tapped again.
   final ValueListenable<int>? tabReselection;
+
+  /// FORK: whether the header carries the close button.
+  final bool showClose;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -544,7 +549,8 @@ class ActivityPage extends HookConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    defaultTargetPlatform == TargetPlatform.iOS
+                    // FORK: `if (showClose)` (unformatted to keep upstream's lines).
+                    if (showClose) defaultTargetPlatform == TargetPlatform.iOS
                         ? Padding(
                             padding: const EdgeInsets.only(right: Grid.twelve),
                             child: IosGlassNavigationButton(

@@ -1,0 +1,21 @@
+# FORK: fork-only package (see FORK.md). Native iOS controls for Hive that
+# upstream does not have, kept out of the Runner project so the fork adds no
+# entries to its project file or AppDelegate.
+name: hive_native
+description: Native iOS controls for the Hive fork of the Buzz mobile app.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.11.4
+  flutter: ">=3.47.9"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      ios:
+        pluginClass: HiveNativePlugin

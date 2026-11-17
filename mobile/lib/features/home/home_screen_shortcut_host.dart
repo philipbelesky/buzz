@@ -9,6 +9,8 @@ import '../../shared/me/default_agent.dart';
 import '../../shared/profile/user_cache_provider.dart';
 import '../../shared/shortcuts/home_screen_shortcuts.dart';
 import '../../shared/widgets/adaptive_conversation_pane.dart';
+// FORK: Hive's Home tabs (see FORK.md).
+import '../../fork/hive_home.dart';
 
 /// Publishes Home's app icon quick actions and runs a tapped one.
 ///
@@ -58,10 +60,12 @@ class HomeScreenShortcutHost extends HookConsumerWidget {
       if (bestie.isLoading || bestie.hasError) return null;
       // New chat and New DM stay listed while their actions are briefly
       // unavailable (loading, or a New chat already open); a tap waits.
+      // FORK: Hive hides Solo chats and the Bestie, so only New DM remains.
       final items = [
-        (shortcut: HomeScreenShortcut.newChat, title: 'New chat'),
+        if (!kHiveTabs)
+          (shortcut: HomeScreenShortcut.newChat, title: 'New chat'),
         (shortcut: HomeScreenShortcut.newDm, title: 'New DM'),
-        if (bestiePubkey != null)
+        if (!kHiveTabs && bestiePubkey != null)
           (
             shortcut: HomeScreenShortcut.messageBestie,
             title: 'Message ${bestieName ?? 'your Bestie'}',

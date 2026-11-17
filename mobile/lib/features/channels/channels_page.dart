@@ -93,6 +93,8 @@ import '../../shared/read_state/deferred_read_state_update.dart';
 import '../../shared/read_state/read_state_provider.dart';
 import '../../shared/read_state/read_state_time.dart';
 
+// FORK: Hive's Home tab scope (see FORK.md).
+import '../../fork/hive_home.dart';
 part 'channels_page/body.dart';
 part 'channels_page/sections.dart';
 part 'channels_page/channel_tile.dart';
@@ -692,7 +694,8 @@ class ChannelsPage extends HookConsumerWidget {
         appBar: FrostedAppBar(
           key: headerKey,
           onNativeReadyChanged: (ready) => nativeHeaderReady.value = ready,
-          nativeTitle: nativeDuoTitle ? 'Messages' : '',
+          // FORK: Hive titles the native header with its Home tab.
+          nativeTitle: nativeDuoTitle ? 'Messages' : HiveInventoryScope.titleOf(context),
           useNativeNavigation: messagesFilters == null,
           nativeViewSuppressed: headerNativeSuppressed,
           nativeLeading: messagesFilters != null

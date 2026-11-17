@@ -1,0 +1,38 @@
+# FORK: fork-only tool (see FORK.md). A generic XCUITest runner that drives the
+# installed Hive Dev app in a simulator from a JSON step file. Generate with
+# `xcodegen generate`, then run fork/tools/sim-driver/drive.sh <steps.json>.
+name: SimDriver
+options:
+  bundleIdPrefix: com.belesky.simdriver
+  deploymentTarget:
+    iOS: "26.0"
+targets:
+  SimDriverHost:
+    type: application
+    platform: iOS
+    sources: [Host]
+    info:
+      path: Host/Info.plist
+      properties:
+        UILaunchScreen: {}
+    settings:
+      GENERATE_INFOPLIST_FILE: YES
+      CODE_SIGNING_ALLOWED: NO
+  SimDriver:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Driver]
+    dependencies:
+      - target: SimDriverHost
+    settings:
+      GENERATE_INFOPLIST_FILE: YES
+      TEST_TARGET_NAME: SimDriverHost
+      CODE_SIGNING_ALLOWED: NO
+schemes:
+  SimDriver:
+    build:
+      targets:
+        SimDriverHost: all
+        SimDriver: [test]
+    test:
+      targets: [SimDriver]
