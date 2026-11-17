@@ -90,6 +90,7 @@ class _HiveTabBarState extends State<HiveTabBar> {
       return NavigationBar(
         selectedIndex: widget.selectedIndex,
         onDestinationSelected: widget.onSelected,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
         destinations: [
           for (final (index, item) in widget.items.indexed)
             NavigationDestination(

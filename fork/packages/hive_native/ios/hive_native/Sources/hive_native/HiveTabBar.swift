@@ -19,6 +19,7 @@ final class HiveTabBarFactory: NSObject, FlutterPlatformViewFactory {
 }
 
 /// A standalone UITabBar, which iOS 26 draws as the floating Liquid Glass bar.
+/// Items show icons only; each title becomes its VoiceOver label.
 ///
 /// Arguments and `setState`: `items` ([{title, symbol}], SF Symbol names),
 /// `selectedIndex`, `badges` (indexes that show a dot), `brightness`
@@ -69,11 +70,8 @@ final class HiveTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDeleg
         itemsSignature = signature
         tabBar.setItems(items.enumerated().map { index, item in
           let symbol = item["symbol"] as? String ?? "circle"
-          let tabItem = UITabBarItem(
-            title: item["title"] as? String,
-            image: UIImage(systemName: symbol),
-            tag: index
-          )
+          let tabItem = UITabBarItem(title: nil, image: UIImage(systemName: symbol), tag: index)
+          tabItem.accessibilityLabel = item["title"] as? String
           tabItem.selectedImage = UIImage(systemName: "\(symbol).fill") ?? UIImage(systemName: symbol)
           return tabItem
         }, animated: false)
