@@ -14,3 +14,10 @@ BUZZ_DEVELOPMENT_TEAM = CNPCA4RAWZ
 // install is distinguishable from a TestFlight one on the same phone.
 APP_DISPLAY_NAME = Hive
 APP_DISPLAY_NAME[config=Debug] = Hive Dev
+
+// Push: Philip's gateway for this app id, on the Repose relay's own tailnet
+// origin (release builds need HTTPS without a port). It accepts only
+// production App Attest, so TestFlight builds; Xcode (Debug) installs stay
+// push-less rather than failing enrollment.
+BUZZ_PUSH_GATEWAY_URL = https:/$()/repose.tail66778.ts.net
+BUZZ_PUSH_GATEWAY_URL[config=Debug] =
