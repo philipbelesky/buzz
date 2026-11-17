@@ -137,6 +137,30 @@ class ActivityPage extends HookConsumerWidget {
         ? PrimaryScrollController.of(context)
         : ownScrollController;
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    // FORK: remember the list's position in Home's `hiveFilters`, and return
+    // to it when the Activity tab is shown again.
+    useEffect(() {
+      final state = hiveFilters;
+      if (state == null || hiveTopInset == null) return null;
+      void remember() {
+        if (scrollController.positions.length == 1) {
+          state.scrollOffset = scrollController.offset;
+        }
+      }
+
+      scrollController.addListener(remember);
+      final saved = state.scrollOffset;
+      if (saved > 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (scrollController.positions.length != 1) return;
+          final position = scrollController.position;
+          scrollController.jumpTo(
+            saved.clamp(position.minScrollExtent, position.maxScrollExtent),
+          );
+        });
+      }
+      return () => scrollController.removeListener(remember);
+    }, [scrollController, hiveFilters]);
     useEffect(() {
       final tabReselection = this.tabReselection;
       if (tabReselection == null) return null;

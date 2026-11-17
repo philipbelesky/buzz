@@ -132,12 +132,16 @@ class HiveUnreadToggle extends StatelessWidget {
   }
 }
 
-/// Activity's filter choices, held by Home so they survive switching tabs:
-/// the Activity tab's page is rebuilt each time it is shown.
+/// Activity's filter choices and scroll position, held by Home so they
+/// survive switching tabs: the Activity tab's page is rebuilt each time it is
+/// shown.
 class HiveActivityFilters {
   final filter = ValueNotifier(InboxFilter.all);
   final sender = ValueNotifier('Anyone');
   final unreadOnly = ValueNotifier(false);
+
+  /// The Activity list's last scroll offset, restored when the tab returns.
+  double scrollOffset = 0;
 
   void dispose() {
     filter.dispose();
