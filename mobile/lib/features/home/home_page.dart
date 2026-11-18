@@ -340,62 +340,61 @@ class HomePage extends HookConsumerWidget {
           : ({...unreadOnlyTabs.value}..remove(tab.value)),
       child: messages,
     );
-    // The tab bar at the bottom left and New at the bottom right, the way iOS
-    // 26 apps pair a tab bar with a separate round button. The bar's platter
-    // is taller than upstream's 56pt slot: centre the platter on the slot and
-    // let the bar's own bottom padding hang below it.
-    Widget hiveTabBar() => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Grid.gutter),
-      child: OverflowBox(
-        alignment: const Alignment(
-          0,
-          -1 +
-              (HiveTabBar.platterHeight - mobileTabBarHeight) /
-                  (HiveTabBar.height - mobileTabBarHeight),
-        ),
-        maxHeight: HiveTabBar.height,
-        child: SizedBox(
-          height: HiveTabBar.height,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              HiveTabBar(
-                items: [for (final t in HiveHomeTab.values) t.item],
-                selectedIndex: tab.value.index,
-                badges: {if (hasUnreadInbox) HiveHomeTab.activity.index},
-                tint: context.colors.primary,
-                onSelected: (index) {
-                  final selected = HiveHomeTab.values[index];
-                  if (selected == tab.value) {
-                    reselect.value++;
-                  } else {
-                    tab.value = selected;
-                  }
-                },
-              ),
-              const Spacer(),
-              IosMessageCreateButton(
-                actions: [
-                  (
-                    label: 'New channel',
-                    symbol: 'number',
-                    onPressed: newChannel.value,
-                  ),
-                  (
-                    label: 'New DM',
-                    symbol: 'bubble.left',
-                    onPressed: newDm.value,
-                  ),
-                ],
-                icon: 'plus',
-                accessibilityLabel: 'New',
-                width: HiveTabBar.platterHeight,
-                height: HiveTabBar.platterHeight,
-                plain: false,
-              ),
-            ],
+    // FORK: the tab bar at the bottom left and New at the bottom right, on
+    // one row where Slack's iOS app puts its tab bar: the native bar sits on
+    // the screen's bottom edge, so its platter lands where a
+    // UITabBarController's would (21pt up, 21pt in), and New matches the
+    // platter's height and inset on the right. The bar's width ends where New
+    // starts; iOS squeezes the tabs if they need more.
+    const newInset = HiveTabBar.sideMargin;
+    const newSize = HiveTabBar.platterHeight;
+    Widget hiveBottomControls() => SizedBox(
+      height: HiveTabBar.height,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: newInset + newSize,
+            bottom: 0,
+            child: HiveTabBar(
+              items: [for (final t in HiveHomeTab.values) t.item],
+              selectedIndex: tab.value.index,
+              badges: {if (hasUnreadInbox) HiveHomeTab.activity.index},
+              tint: context.colors.primary,
+              onSelected: (index) {
+                final selected = HiveHomeTab.values[index];
+                if (selected == tab.value) {
+                  reselect.value++;
+                } else {
+                  tab.value = selected;
+                }
+              },
+            ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            right: newInset,
+            child: IosMessageCreateButton(
+              actions: [
+                (
+                  label: 'New channel',
+                  symbol: 'number',
+                  onPressed: newChannel.value,
+                ),
+                (
+                  label: 'New DM',
+                  symbol: 'bubble.left',
+                  onPressed: newDm.value,
+                ),
+              ],
+              icon: 'plus',
+              accessibilityLabel: 'New',
+              width: newSize,
+              height: newSize,
+              plain: false,
+            ),
+          ),
+        ],
       ),
     );
     final bottom = mobileTabBarBottom(context);
@@ -471,9 +470,11 @@ class HomePage extends HookConsumerWidget {
                     builder: (_, nativeControlsVisible) =>
                         (defaultTargetPlatform != TargetPlatform.iOS ||
                             nativeControlsVisible)
-                        // FORK: Hive's tab bar in place of Search/New/Bestie.
+                        // FORK: Hive's controls replace Search/New/Bestie;
+                        // they are drawn in the body below, so this slot
+                        // only keeps the body's bottom padding.
                         ? kHiveTabs
-                              ? hiveTabBar()
+                              ? const SizedBox.shrink()
                               : Center(child: navigationBar(Axis.horizontal))
                         : const SizedBox.shrink(),
                   ),
@@ -605,6 +606,22 @@ class HomePage extends HookConsumerWidget {
                     height: mobileTabFooterBackdropHeight(context),
                     tint: context.controlSurface,
                   ),
+                ),
+              ),
+            // FORK: Hive's tab bar and New button, from the screen's bottom
+            // edge rather than inside the bottom bar's slot, so the bar's
+            // platter lands where a system tab bar's would.
+            if (kHiveTabs && strip == null && showWorkspaceNavigation)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _NativeControlsGate(
+                  builder: (_, nativeControlsVisible) =>
+                      defaultTargetPlatform != TargetPlatform.iOS ||
+                          nativeControlsVisible
+                      ? hiveBottomControls()
+                      : const SizedBox.shrink(),
                 ),
               ),
           ],

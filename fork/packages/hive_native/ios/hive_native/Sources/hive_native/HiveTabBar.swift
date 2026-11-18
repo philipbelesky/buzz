@@ -26,27 +26,17 @@ final class HiveTabBarFactory: NSObject, FlutterPlatformViewFactory {
 /// ("light"/"dark") and `tint` (ARGB int). Selection is reported back as
 /// `selected` with the index.
 final class HiveTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDelegate {
-  private let container: UIView
+  private let container: LeadingTabBarContainer
   private let tabBar = InsetFreeTabBar()
   private let channel: FlutterMethodChannel
   private var itemsSignature: [String] = []
 
   init(frame: CGRect, viewId: Int64, arguments args: Any?, messenger: FlutterBinaryMessenger) {
-    container = UIView(frame: frame)
+    container = LeadingTabBarContainer(frame: frame, tabBar: tabBar)
     channel = FlutterMethodChannel(name: "hive/tab_bar/\(viewId)", binaryMessenger: messenger)
     super.init()
 
-    container.backgroundColor = .clear
-    container.isOpaque = false
     tabBar.delegate = self
-    tabBar.translatesAutoresizingMaskIntoConstraints = false
-    container.addSubview(tabBar)
-    NSLayoutConstraint.activate([
-      tabBar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-      tabBar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-      tabBar.topAnchor.constraint(equalTo: container.topAnchor),
-      tabBar.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-    ])
     apply(args)
 
     channel.setMethodCallHandler { [weak self] call, result in
@@ -102,11 +92,43 @@ final class HiveTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDeleg
   }
 }
 
+/// Holds the tab bar so its glass platter sits at the leading edge rather
+/// than centred. UITabBar sizes the platter for its items (squeezing them when
+/// the bar is too narrow) and centres it; this shifts the whole bar left until
+/// the platter is `margin` from the container's edge, the inset a
+/// UITabBarController's bar keeps.
+private final class LeadingTabBarContainer: UIView {
+  private let tabBar: UITabBar
+  private let margin: CGFloat = 21
+
+  init(frame: CGRect, tabBar: UITabBar) {
+    self.tabBar = tabBar
+    super.init(frame: frame)
+    backgroundColor = .clear
+    isOpaque = false
+    addSubview(tabBar)
+  }
+
+  required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    tabBar.frame = bounds
+    tabBar.layoutIfNeeded()
+    // The platter is the bar's one subview narrower than the bar itself.
+    let platterMinX = tabBar.subviews
+      .filter { $0.frame.width < tabBar.bounds.width - 1 }
+      .map(\.frame.minX)
+      .min() ?? margin
+    tabBar.frame.origin.x = -max(0, platterMinX - margin)
+  }
+}
+
 /// A tab bar that ignores the window's safe area. Hosted in Flutter near the
 /// bottom of the screen, a plain UITabBar takes the home-indicator inset as
-/// its own; Flutter already places the bar above it. Even so the bar keeps
-/// about 21pt of bottom padding below its 62pt glass platter, which is why
-/// the Flutter side gives it 83pt and lets the padding hang below its slot.
+/// its own. Even so the bar keeps about 21pt of bottom padding below its
+/// 62pt glass platter, so the Flutter side gives it 83pt on the screen's
+/// bottom edge, which puts the platter where a UITabBarController would.
 private final class InsetFreeTabBar: UITabBar {
   override var safeAreaInsets: UIEdgeInsets { .zero }
 }

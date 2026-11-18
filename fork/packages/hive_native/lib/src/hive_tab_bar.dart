@@ -23,6 +23,9 @@ class HiveTabItem {
 
 /// iOS 26's Liquid Glass tab bar, as a native UITabBar hosted in Flutter.
 ///
+/// iOS sizes the glass platter for its tabs, squeezing them when the bar is
+/// too narrow; the platter sits [sideMargin] from the bar's leading edge.
+///
 /// Elsewhere it falls back to a Material [NavigationBar] so the app still
 /// builds and runs.
 class HiveTabBar extends StatefulWidget {
@@ -43,14 +46,16 @@ class HiveTabBar extends StatefulWidget {
   final Set<int> badges;
   final Color? tint;
 
-  /// Width the native bar needs for [count] tabs.
-  static double widthFor(int count) => 24.0 + count * 82.0;
   /// The native bar's height: its 62pt glass platter plus the padding
   /// UITabBar keeps below it (see HiveTabBar.swift).
   static const double height = 83;
 
   /// The visible platter's height, for laying the bar out against others.
   static const double platterHeight = 62;
+
+  /// The platter's inset from the bar's leading edge, the same as its inset
+  /// from the bottom (`height - platterHeight`) and a UITabBarController's.
+  static const double sideMargin = 21;
 
   @override
   State<HiveTabBar> createState() => _HiveTabBarState();
@@ -104,7 +109,6 @@ class _HiveTabBarState extends State<HiveTabBar> {
       );
     }
     return SizedBox(
-      width: HiveTabBar.widthFor(widget.items.length),
       height: HiveTabBar.height,
       child: Semantics(
         container: true,
