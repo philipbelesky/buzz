@@ -21,3 +21,9 @@ APP_DISPLAY_NAME[config=Debug] = Hive Dev
 // push-less rather than failing enrollment.
 BUZZ_PUSH_GATEWAY_URL = https:/$()/repose.tail66778.ts.net
 BUZZ_PUSH_GATEWAY_URL[config=Debug] =
+
+// iPhone and iPad. Upstream ships iPhone-only (TARGETED_DEVICE_FAMILY = 1 at
+// project level), so on iPad it runs as a fixed-size iPhone window. The
+// targets set no device family of their own, so this wins for the app and its
+// extensions alike; Info.plist adds the iPad orientations multitasking needs.
+TARGETED_DEVICE_FAMILY = 1,2

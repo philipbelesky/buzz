@@ -37,6 +37,12 @@ final class HiveTabBarPlatformView: NSObject, FlutterPlatformView, UITabBarDeleg
     super.init()
 
     tabBar.delegate = self
+    // On iPad the regular width class draws a shorter, label-style platter;
+    // the compact class keeps the iPhone's 62pt one, which New and the
+    // Flutter layout are sized against.
+    if #available(iOS 17.0, *) {
+      tabBar.traitOverrides.horizontalSizeClass = .compact
+    }
     apply(args)
 
     channel.setMethodCallHandler { [weak self] call, result in
@@ -116,11 +122,14 @@ private final class LeadingTabBarContainer: UIView {
     tabBar.frame = bounds
     tabBar.layoutIfNeeded()
     // The platter is the bar's one subview narrower than the bar itself.
-    let platterMinX = tabBar.subviews
-      .filter { $0.frame.width < tabBar.bounds.width - 1 }
-      .map(\.frame.minX)
-      .min() ?? margin
+    let platters = tabBar.subviews.filter { $0.frame.width < tabBar.bounds.width - 1 }
+    let platterMinX = platters.map(\.frame.minX).min() ?? margin
     tabBar.frame.origin.x = -max(0, platterMinX - margin)
+    // Its bottom `margin` above the container's, as on an iPhone. iPad keeps
+    // less padding below the platter, which would drop it below New.
+    if let platterMaxY = platters.map(\.frame.maxY).max() {
+      tabBar.frame.origin.y = bounds.height - margin - platterMaxY
+    }
   }
 }
 

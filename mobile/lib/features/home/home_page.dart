@@ -591,12 +591,54 @@ class HomePage extends HookConsumerWidget {
                             );
                           },
                         )
-                      // FORK: the selected Hive tab's content.
-                      : (kHiveTabs ? hiveContent : messages),
+                      // FORK: the selected Hive tab's content. With two
+                      // panes (iPad), the tab bar and New sit at the foot of
+                      // the list pane rather than across the whole window.
+                      : (kHiveTabs
+                            ? wide
+                                  ? Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        hiveContent,
+                                        Positioned(
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 0,
+                                          child: IgnorePointer(
+                                            child: MobileTabFooterBackdrop(
+                                              height:
+                                                  mobileTabFooterBackdropHeight(
+                                                    context,
+                                                  ),
+                                              tint: context.controlSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 0,
+                                          child: _NativeControlsGate(
+                                            builder: (_, visible) =>
+                                                defaultTargetPlatform !=
+                                                        TargetPlatform.iOS ||
+                                                    visible
+                                                ? hiveBottomControls()
+                                                : const SizedBox.shrink(),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : hiveContent
+                            : messages),
                 ),
               ),
             ),
-            if (strip == null && showWorkspaceNavigation)
+            // FORK: with two panes Hive draws its backdrop in the list pane,
+            // under its controls, so none is drawn over them here.
+            if (strip == null &&
+                showWorkspaceNavigation &&
+                !(kHiveTabs && wide))
               Positioned(
                 left: 0,
                 right: 0,
@@ -610,8 +652,9 @@ class HomePage extends HookConsumerWidget {
               ),
             // FORK: Hive's tab bar and New button, from the screen's bottom
             // edge rather than inside the bottom bar's slot, so the bar's
-            // platter lands where a system tab bar's would.
-            if (kHiveTabs && strip == null && showWorkspaceNavigation)
+            // platter lands where a system tab bar's would. Two panes draw
+            // them in the list pane instead.
+            if (kHiveTabs && strip == null && showWorkspaceNavigation && !wide)
               Positioned(
                 left: 0,
                 right: 0,
