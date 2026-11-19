@@ -2,6 +2,8 @@
 
 This is Philip Belesky's fork of [block/buzz](https://github.com/block/buzz). It exists to build a small, focused personal build of the **mobile** app (`mobile/`) that talks to Philip's own relay. Everything else in the monorepo is upstream's and is carried unchanged.
 
+The build is called **Hive**. It is not the Buzz desktop app Philip runs, which is Buzz 1.x built from [block/buzz-app](https://github.com/block/buzz-app), cloned for reference at `~/Sites/buzz-app` (desktop UI, plugins, agent harness). `desktop/` in this repository is upstream's deprecated 0.X app: do not use it to answer questions about the installed desktop app.
+
 Read this file before changing anything in the fork, and update it in the same commit as any change that diverges from upstream.
 
 ## Rules for diverging

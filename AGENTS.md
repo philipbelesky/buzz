@@ -1,5 +1,7 @@
 <!-- FORK: philipbelesky/buzz. Keep this block above upstream's guide. -->
 > **This checkout is Philip Belesky's fork of block/buzz.** Read [FORK.md](FORK.md) before changing anything: it sets the rules for diverging from upstream, the register of every fork change, and how upstream is merged in. Its rules take precedence over upstream's PR and contribution process below, which applies only to work proposed back to block/buzz.
+>
+> **This fork is Hive, Philip's build of the mobile app (`mobile/`).** It is not the Buzz desktop app Philip runs: that is Buzz 1.x from [block/buzz-app](https://github.com/block/buzz-app) (a read-only reference clone is at `~/Sites/buzz-app`), where the desktop UI, plugins and agent harness live. `desktop/` here is upstream's deprecated 0.X app, carried unchanged; never read it as evidence of how the installed desktop app behaves.
 
 # AGENTS.md — AI Agent Contributor Guide
 
