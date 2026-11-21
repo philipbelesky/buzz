@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_native/hive_native.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../features/activity/inbox_item.dart';
 import '../shared/theme/buzz_icons.dart';
@@ -132,13 +133,44 @@ class HiveUnreadToggle extends StatelessWidget {
   }
 }
 
+/// The Home tabs whose Unread filter is on, saved on the device so the
+/// choice survives relaunches. Device-wide rather than per community.
+final hiveUnreadTabsProvider =
+    NotifierProvider<HiveUnreadTabs, Set<HiveHomeTab>>(HiveUnreadTabs.new);
+
+class HiveUnreadTabs extends Notifier<Set<HiveHomeTab>> {
+  static const prefsKey = 'hive.unreadOnlyTabs';
+
+  @override
+  Set<HiveHomeTab> build() {
+    final names =
+        ref.read(savedPrefsProvider).getStringList(prefsKey) ?? const [];
+    return {
+      for (final tab in HiveHomeTab.values)
+        if (names.contains(tab.name)) tab,
+    };
+  }
+
+  void setUnreadOnly(HiveHomeTab tab, bool on) {
+    if (state.contains(tab) == on) return;
+    state = on ? {...state, tab} : ({...state}..remove(tab));
+    ref.read(savedPrefsProvider).setStringList(prefsKey, [
+      for (final tab in state) tab.name,
+    ]);
+  }
+}
+
 /// Activity's filter choices and scroll position, held by Home so they
 /// survive switching tabs: the Activity tab's page is rebuilt each time it is
-/// shown.
+/// shown. Its Unread choice starts from [hiveUnreadTabsProvider], which Home
+/// keeps in step with it.
 class HiveActivityFilters {
+  HiveActivityFilters({bool unreadOnly = false})
+    : unreadOnly = ValueNotifier(unreadOnly);
+
   final filter = ValueNotifier(InboxFilter.all);
   final sender = ValueNotifier('Anyone');
-  final unreadOnly = ValueNotifier(false);
+  final ValueNotifier<bool> unreadOnly;
 
   /// The Activity list's last scroll offset, restored when the tab returns.
   double scrollOffset = 0;

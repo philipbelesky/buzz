@@ -90,10 +90,26 @@ class HomePage extends HookConsumerWidget {
     final filter = useState('All');
     // FORK: the selected Hive Home tab.
     final tab = useState(HiveHomeTab.channels);
-    // FORK: each inventory tab keeps its own Unread toggle.
-    final unreadOnlyTabs = useState(<HiveHomeTab>{});
-    final activityFilters = useMemoized(HiveActivityFilters.new);
-    useEffect(() => activityFilters.dispose, [activityFilters]);
+    // FORK: each Hive tab keeps its own Unread toggle, saved across launches.
+    final unreadOnlyTabs = ref.watch(hiveUnreadTabsProvider);
+    final activityFilters = useMemoized(
+      () => HiveActivityFilters(
+        unreadOnly: ref
+            .read(hiveUnreadTabsProvider)
+            .contains(HiveHomeTab.activity),
+      ),
+    );
+    useEffect(() {
+      final unread = activityFilters.unreadOnly;
+      void save() => ref
+          .read(hiveUnreadTabsProvider.notifier)
+          .setUnreadOnly(HiveHomeTab.activity, unread.value);
+      unread.addListener(save);
+      return () {
+        unread.removeListener(save);
+        activityFilters.dispose();
+      };
+    }, [activityFilters]);
     final hasUnreadInbox = ref.watch(inboxHasUnreadProvider);
     final inboxLabel = hasUnreadInbox ? 'Activity, unread items' : 'Activity';
     final reselect = useValueNotifier(0);
@@ -334,10 +350,10 @@ class HomePage extends HookConsumerWidget {
     // header; HiveInventoryScope picks what it lists (or Activity).
     final hiveContent = HiveInventoryScope(
       tab: tab.value,
-      unreadOnly: unreadOnlyTabs.value.contains(tab.value),
-      onUnreadOnlyChanged: (on) => unreadOnlyTabs.value = on
-          ? {...unreadOnlyTabs.value, tab.value}
-          : ({...unreadOnlyTabs.value}..remove(tab.value)),
+      unreadOnly: unreadOnlyTabs.contains(tab.value),
+      onUnreadOnlyChanged: (on) => ref
+          .read(hiveUnreadTabsProvider.notifier)
+          .setUnreadOnly(tab.value, on),
       child: messages,
     );
     // FORK: the tab bar at the bottom left and New at the bottom right, on
