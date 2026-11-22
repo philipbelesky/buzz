@@ -68,6 +68,8 @@ dependencies:
   flutter_cache_manager: ^3.5.0
   file: ^7.0.1
   path: ^1.9.1
+  sentry_flutter: ^10.5.0
+  sqlite3: 3.9.1
 
 dev_dependencies:
   leak_tracker: ^11.0.2
@@ -86,8 +88,6 @@ dev_dependencies:
   video_player_platform_interface: ^6.6.0
 
 flutter:
-  config:
-    enable-swift-package-manager: false
   uses-material-design: true
   shaders:
     - shaders/toast_island.frag

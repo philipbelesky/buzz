@@ -1,3 +1,6 @@
+import '../../shared/widgets/native_route_controls.dart';
+import 'dart:ui' as ui;
+
 import 'package:duo_kit/duo_kit.dart';
 
 import '../../shared/widgets/adaptive_conversation_pane.dart';
@@ -27,7 +30,6 @@ import '../activity/inbox_unread_provider.dart';
 import '../channels/channels_page.dart';
 import '../search/search_page.dart';
 import 'home_screen_shortcut_host.dart';
-import 'messages_filters.dart';
 import 'messages_navigation_bar.dart';
 // FORK: Hive's Home tabs (see FORK.md).
 import 'package:hive_native/hive_native.dart';
@@ -87,7 +89,7 @@ class HomePage extends HookConsumerWidget {
     final showWorkspaceNavigation = wide || conversations.selectedId == null;
 
     final communitySurfaceProgress = useState(0.0);
-    final filter = useState('All');
+    final recordingFocus = useState(false);
     // FORK: the selected Hive Home tab.
     final tab = useState(HiveHomeTab.channels);
     // FORK: each Hive tab keeps its own Unread toggle, saved across launches.
@@ -110,9 +112,11 @@ class HomePage extends HookConsumerWidget {
         activityFilters.dispose();
       };
     }, [activityFilters]);
+    // FORK: tells Activity its Hive tab was tapped again. Upstream dropped
+    // its own reselection signal with the All/Solo/Team filter.
+    final reselect = useValueNotifier(0);
     final hasUnreadInbox = ref.watch(inboxHasUnreadProvider);
     final inboxLabel = hasUnreadInbox ? 'Activity, unread items' : 'Activity';
-    final reselect = useValueNotifier(0);
     final newChat = useValueNotifier<VoidCallback?>(null);
     final newWorkspace = useValueNotifier<VoidCallback?>(null);
     final newChannel = useValueNotifier<VoidCallback?>(null);
@@ -151,6 +155,7 @@ class HomePage extends HookConsumerWidget {
       BottomUpPageRoute<void>(
         builder: (_) => AdaptiveConversationDestination(
           preferredListWidth: sidebarWidth,
+          listToolbarSlots: 1,
           child: const ActivityPage(),
         ),
         reducedMotion: reducedMotion,
@@ -169,8 +174,6 @@ class HomePage extends HookConsumerWidget {
               tabReselection: reselect,
             )
           : null,
-      messagesActionsWidth:
-          2 * (defaultTargetPlatform == TargetPlatform.iOS ? 44 : 48) + Grid.xs,
       messagesActionsBuilder: (openSwitcher, avatarKey) {
         final moreActions = [
           // An internal build reaches only its organization's community.
@@ -208,7 +211,8 @@ class HomePage extends HookConsumerWidget {
                 : Stack(
                     alignment: Alignment.center,
                     children: [
-                      defaultTargetPlatform == TargetPlatform.iOS
+                      defaultTargetPlatform == TargetPlatform.iOS &&
+                              !recordingFocus.value
                           ? IosGlassNavigationButton(
                               icon: IosGlassNavigationIcon.bell,
                               semanticLabel: inboxLabel,
@@ -221,6 +225,7 @@ class HomePage extends HookConsumerWidget {
                           : IconButton.filledTonal(
                               tooltip: inboxLabel,
                               style: IconButton.styleFrom(
+                                shape: const CircleBorder(),
                                 backgroundColor:
                                     context.colors.surfaceContainerHighest,
                                 foregroundColor: context.colors.onSurface,
@@ -282,7 +287,9 @@ class HomePage extends HookConsumerWidget {
           const SizedBox(width: Grid.xs),
           SizedBox(
             key: avatarKey,
-            child: defaultTargetPlatform == TargetPlatform.iOS
+            child:
+                defaultTargetPlatform == TargetPlatform.iOS &&
+                    !recordingFocus.value
                 ? IosMessageCreateButton(
                     actions: moreActions,
                     dividerBefore: OrganizationEnvironment.enabled
@@ -297,6 +304,26 @@ class HomePage extends HookConsumerWidget {
                     width: 44,
                     height: 44,
                     plain: false,
+                  )
+                : recordingFocus.value &&
+                      defaultTargetPlatform == TargetPlatform.iOS
+                ? SizedBox.square(
+                    dimension: 44,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: context.colors.surfaceContainerHighest,
+                      ),
+                      child: Center(
+                        child: ClipOval(
+                          child: CommunityAvatar(
+                            name: communityName,
+                            relayUrl: community?.relayUrl,
+                            size: 36,
+                          ),
+                        ),
+                      ),
+                    ),
                   )
                 : AndroidExpandingMenuButton(
                     label: 'Community menu',
@@ -316,32 +343,12 @@ class HomePage extends HookConsumerWidget {
           ),
         ];
       },
-      // FORK: no All/Solo/Team filter; Hive always shows "All".
-      messagesFilters: kHiveTabs
-          ? null
-          : (isCollapsed) => MessagesFilters(
-              isCollapsed: isCollapsed,
-              selected: filter.value,
-              onSelected: (value) {
-                filter.value = value;
-                reselect.value++;
-              },
-            ),
       // FORK: Solo (personal agent chats) is hidden in Hive.
-      soloSliver: kHiveTabs || solo == null
-          ? null
-          : SliverOffstage(
-              key: const ValueKey('messages-solo-inventory'),
-              offstage: filter.value == 'Team',
-              sliver: solo,
-            ),
-      showTeam: filter.value != 'Solo',
-      showTeamHeading: !kHiveTabs && filter.value == 'All',
+      soloSliver: kHiveTabs ? null : solo,
       newChannelAction: newChannel,
       newDmAction: newDm,
       communityInvitePageBuilder: communityInvitePageBuilder,
       communityAppearancePageBuilder: communityAppearancePageBuilder,
-      tabReselection: reselect,
       onSettingsTransitionProgress: (progress) {
         communitySurfaceProgress.value = progress;
       },
@@ -413,9 +420,33 @@ class HomePage extends HookConsumerWidget {
         ],
       ),
     );
+    final focusedMessages = Stack(
+      children: [
+        ImageFiltered(
+          key: const ValueKey('voice-recording-focus'),
+          enabled: recordingFocus.value,
+          imageFilter: ui.ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+          child: ExcludeSemantics(
+            excluding: recordingFocus.value,
+            child: messages,
+          ),
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            ignoring: !recordingFocus.value,
+            child: ColoredBox(
+              color: recordingFocus.value
+                  ? context.colors.surface.withValues(alpha: 0.18)
+                  : Colors.transparent,
+            ),
+          ),
+        ),
+      ],
+    );
     final bottom = mobileTabBarBottom(context);
     Widget navigationBar(Axis axis) => MessagesNavigationBar(
       axis: axis,
+      onRecordingChanged: (value) => recordingFocus.value = value,
       onSearch: openSearch,
       agent: ConversationPaneScope(
         controller: conversations,
@@ -437,6 +468,7 @@ class HomePage extends HookConsumerWidget {
       ],
     );
     return DuoWorkspaceScaffold(
+      navigationOverflow: 100,
       navigationBuilder: (context, placement) => _NativeControlsGate(
         builder: (_, nativeControlsVisible) =>
             wide ||
@@ -450,7 +482,8 @@ class HomePage extends HookConsumerWidget {
                         MediaQuery.sizeOf(context),
                         strip!.rect.center.dx,
                       ) -
-                      strip.rect.center.dx,
+                      strip.rect.center.dx -
+                      100,
                   0,
                 ),
                 child: SafeArea(
@@ -572,7 +605,7 @@ class HomePage extends HookConsumerWidget {
                                           mobileTabBarBottomGap,
                                     ),
                                   ),
-                                  child: messages,
+                                  child: focusedMessages,
                                 ),
                                 Positioned(
                                   left: 0,
@@ -646,7 +679,7 @@ class HomePage extends HookConsumerWidget {
                                       ],
                                     )
                                   : hiveContent
-                            : messages),
+                            : focusedMessages),
                 ),
               ),
             ),
@@ -703,13 +736,6 @@ class _NativeControlsGate extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final route = ModalRoute.of(context);
-    final coveringProgress = useAnimation(
-      route?.secondaryAnimation ?? kAlwaysDismissedAnimation,
-    );
-    return builder(
-      context,
-      (route?.isCurrent ?? true) && coveringProgress == 0,
-    );
+    return builder(context, useNativeRouteControlsVisible(context));
   }
 }
